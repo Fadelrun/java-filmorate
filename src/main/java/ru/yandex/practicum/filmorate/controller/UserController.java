@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -68,7 +69,7 @@ public class UserController {
                 .findFirst()
                 .orElseThrow(() -> {
                     log.warn("Пользователь с ID {} не найден", user.getId());
-                    return new ValidationException("Пользователь с указанным ID не найден");
+                    return new NotFoundException("Пользователь с указанным ID не найден");
                 });
 
         if (user.getName() == null || user.getName().isBlank()) {

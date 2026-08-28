@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
@@ -65,7 +66,7 @@ public class FilmController {
                 .findFirst()
                 .orElseThrow(() -> {
                     log.warn("Фильм с ID {} не найден", film.getId());
-                    return new ValidationException("Фильм с указанным ID не найден");
+                    return new NotFoundException("Фильм с указанным ID не найден");
                 });
 
         existingFilm.setName(film.getName());
