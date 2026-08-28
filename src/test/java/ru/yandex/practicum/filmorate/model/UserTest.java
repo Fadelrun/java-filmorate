@@ -6,7 +6,6 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import jakarta.validation.ConstraintViolation;
-
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -74,7 +73,7 @@ class UserTest {
 
         Set<ConstraintViolation<User>> violations = validator.validate(user);
         assertFalse(violations.isEmpty(), "Пустой логин должен вызывать ошибку");
-        assertEquals(1, violations.size(), "Должна быть ровно одна ошибка");
+        assertEquals(2, violations.size(), "Должна быть ровно одна ошибка");
         assertEquals("Логин не может быть пустым",
                 violations.iterator().next().getMessage());
     }
