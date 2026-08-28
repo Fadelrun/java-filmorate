@@ -73,10 +73,14 @@ class UserTest {
         user.setBirthday(LocalDate.of(2000, 1, 1));
 
         Set<ConstraintViolation<User>> violations = validator.validate(user);
+
         assertFalse(violations.isEmpty(), "Пустой логин должен вызывать ошибку");
-        assertEquals(2, violations.size(), "Должна быть ровно одна ошибка");
-        assertEquals("Логин не может быть пустым",
-                violations.iterator().next().getMessage());
+        assertTrue(violations.stream()
+                        .anyMatch(v -> v.getMessage().equals("Логин не может быть пустым")),
+                "Должна быть ошибка о пустом логине");
+        assertTrue(violations.stream()
+                        .anyMatch(v -> v.getMessage().equals("Логин не должен содержать пробелы")),
+                "Должна быть ошибка о пробелах в логине");
     }
 
     @Test
