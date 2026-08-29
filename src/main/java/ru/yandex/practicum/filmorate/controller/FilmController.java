@@ -30,12 +30,7 @@ public class FilmController {
     @ResponseStatus(HttpStatus.CREATED)
     public Film createFilm(@Valid @RequestBody Film film) {
         log.info("POST /films - Создание фильма: {}", film.getName());
-        if (!film.isValidReleaseDate()) {
-            log.warn("Некорректная дата релиза: {}", film.getReleaseDate());
-            throw new ValidationException(
-                    "Дата релиза не может быть ранее " + Film.MIN_RELEASE_DATE
-            );
-        }
+        validateReleaseDate(film);
 
         film.setId(nextId++);
         films.add(film);
@@ -54,12 +49,7 @@ public class FilmController {
             throw new ValidationException("ID фильма должен быть указан");
         }
 
-        if (!film.isValidReleaseDate()) {
-            log.warn("Некорректная дата релиза: {}", film.getReleaseDate());
-            throw new ValidationException(
-                    "Дата релиза не может быть ранее " + Film.MIN_RELEASE_DATE
-            );
-        }
+        validateReleaseDate(film);
 
         Film existingFilm = films.stream()
                 .filter(f -> f.getId() == film.getId())
@@ -77,5 +67,14 @@ public class FilmController {
         log.info("Фильм с ID {} обновлен", film.getId());
 
         return existingFilm;
+    }
+
+    private void validateReleaseDate(Film film) {
+        if (!film.isValidReleaseDate()) {
+            log.warn("Некорректная дата релиза: {}", film.getReleaseDate());
+            throw new ValidationException(
+                    "Дата релиза не может быть ранее " + Film.MIN_RELEASE_DATE
+            );
+        }
     }
 }
