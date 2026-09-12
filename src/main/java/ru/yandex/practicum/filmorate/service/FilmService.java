@@ -33,7 +33,7 @@ public class FilmService {
         return filmStorage.findById(id);
     }
 
-    public Film createFilm(Film film){
+    public Film createFilm(Film film) {
         log.info("Создание фильма: {}", film.getName());
         validateReleaseDate(film);
         return filmStorage.save(film);
