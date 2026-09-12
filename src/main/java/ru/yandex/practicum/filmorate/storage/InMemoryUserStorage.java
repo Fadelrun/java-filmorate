@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class InMemoryUserStorage implements UserStorage{
+public class InMemoryUserStorage implements UserStorage {
     private final Map<Integer, User> users = new HashMap<>();
     private int nextId = 1;
 
