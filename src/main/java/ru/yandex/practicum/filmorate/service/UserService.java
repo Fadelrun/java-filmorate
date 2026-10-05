@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -18,7 +17,7 @@ import java.util.Set;
 public class UserService {
     private final UserStorage userStorage;
 
-    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
+    public UserService(UserStorage userStorage) {
         this.userStorage = userStorage;
     }
 
@@ -60,10 +59,14 @@ public class UserService {
         }
 
         User user = userStorage.findById(userId);
-        userStorage.findById(friendId);
+        User friend = userStorage.findById(friendId);
 
         user.addFriend(friendId);
+        friend.addFriend(userId);
+
         userStorage.update(user);
+        userStorage.update(friend);
+
         log.debug("Пользователи {} и {} теперь друзья", userId, friendId);
     }
 
@@ -71,8 +74,13 @@ public class UserService {
         log.info("Пользователь {} удаляет из друзей {}", userId, friendId);
 
         User user = userStorage.findById(userId);
+        User friend = userStorage.findById(friendId);
+
         user.removeFriend(friendId);
+        friend.removeFriend(userId);
+
         userStorage.update(user);
+        userStorage.update(friend);
     }
 
     public List<User> getFriends(int userId) {
