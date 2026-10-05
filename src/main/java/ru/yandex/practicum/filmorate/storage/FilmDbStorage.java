@@ -112,6 +112,9 @@ public class FilmDbStorage implements FilmStorage {
 
         saveGenres(film);
 
+        clearLikes(film.getId());
+        saveLikes(film.getId(), film.getLikes());
+
         return film;
     }
 
@@ -159,5 +162,17 @@ public class FilmDbStorage implements FilmStorage {
         for (Genre genre : film.getGenres()) {
             jdbcTemplate.update(sql, film.getId(), genre.getId());
         }
+    }
+
+    private void saveLikes(int filmId, Set<Integer> likes) {
+        if (likes == null || likes.isEmpty()) return;
+        String sql = "INSERT INTO likes (film_id, user_id) VALUES (?, ?)";
+        for (Integer userId : likes) {
+            jdbcTemplate.update(sql, filmId, userId);
+        }
+    }
+
+    private void clearLikes(int filmId) {
+        jdbcTemplate.update("DELETE FROM likes WHERE film_id = ?", filmId);
     }
 }

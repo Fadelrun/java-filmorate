@@ -41,4 +41,11 @@ public class GenreDbStorage implements GenreStorage {
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Жанр с ID " + id + " не найден"));
     }
+
+    @Override
+    public boolean existsById(int id) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM genres WHERE id = ?", Integer.class, id);
+        return count != null && count > 0;
+    }
 }

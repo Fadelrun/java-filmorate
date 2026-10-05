@@ -8,4 +8,6 @@ public interface GenreStorage {
     List<Genre> findAll();
 
     Genre findById(int id);
+
+    boolean existsById(int id);
 }

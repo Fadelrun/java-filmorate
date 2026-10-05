@@ -32,4 +32,11 @@ public class MpaDbStorage implements MpaStorage {
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Рейтинг MPA с ID " + id + " не найден"));
     }
+
+    @Override
+    public boolean existsById(int id) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM mpa_ratings WHERE id = ?", Integer.class, id);
+        return count != null && count > 0;
+    }
 }

@@ -13,7 +13,9 @@ import ru.yandex.practicum.filmorate.model.User;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Repository
 @Primary
@@ -37,16 +39,20 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> findAll() {
         String sql = "SELECT * FROM users ORDER BY id";
-        return jdbcTemplate.query(sql, USER_ROW_MAPPER);
+        List<User> users = jdbcTemplate.query(sql, USER_ROW_MAPPER);
+        users.forEach(this::enrich);
+        return users;
     }
 
     @Override
     public User findById(int id) {
         String sql = "SELECT * FROM users WHERE id = ?";
-        return jdbcTemplate.query(sql, USER_ROW_MAPPER, id)
+        User user = jdbcTemplate.query(sql, USER_ROW_MAPPER, id)
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Пользователь с ID " + id + " не найден"));
+        enrich(user);
+        return user;
     }
 
     @Override
@@ -73,11 +79,10 @@ public class UserDbStorage implements UserStorage {
         return user;
     }
 
-    @Override
     @Transactional
+    @Override
     public User update(User user) {
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
-
         int rows = jdbcTemplate.update(sql,
                 user.getEmail(), user.getLogin(), user.getName(),
                 Date.valueOf(user.getBirthday()), user.getId());
@@ -85,6 +90,9 @@ public class UserDbStorage implements UserStorage {
         if (rows == 0) {
             throw new NotFoundException("Пользователь с ID " + user.getId() + " не найден");
         }
+
+        clearFriends(user.getId());
+        saveFriends(user.getId(), user.getFriends());
 
         return user;
     }
@@ -100,5 +108,26 @@ public class UserDbStorage implements UserStorage {
                 "SELECT COUNT(*) FROM users WHERE id = ?", Integer.class, id);
 
         return count != null && count > 0;
+    }
+
+    private Set<Integer> loadFriends(int userId) {
+        String sql = "SELECT friend_id FROM friendships WHERE user_id = ?";
+        return new HashSet<>(jdbcTemplate.queryForList(sql, Integer.class, userId));
+    }
+
+    private void saveFriends(int userId, Set<Integer> friends) {
+        if (friends == null || friends.isEmpty()) return;
+        String sql = "INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, 'CONFIRMED')";
+        for (Integer friendId : friends) {
+            jdbcTemplate.update(sql, userId, friendId);
+        }
+    }
+
+    private void clearFriends(int userId) {
+        jdbcTemplate.update("DELETE FROM friendships WHERE user_id = ?", userId);
+    }
+
+    private void enrich(User user) {
+        user.setFriends(loadFriends(user.getId()));
     }
 }

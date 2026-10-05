@@ -71,6 +71,8 @@ public class UserService {
         log.info("Пользователь {} удаляет из друзей {}", userId, friendId);
 
         User user = userStorage.findById(userId);
+        userStorage.findById(friendId);
+
         user.removeFriend(friendId);
         userStorage.update(user);
     }
