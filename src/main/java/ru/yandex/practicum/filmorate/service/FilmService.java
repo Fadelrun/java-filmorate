@@ -45,6 +45,7 @@ public class FilmService {
     public Film createFilm(Film film) {
         log.info("Создание фильма: {}", film.getName());
         validateReleaseDate(film);
+        validateMpaAndGenres(film);
         return filmStorage.save(film);
     }
 
@@ -57,6 +58,7 @@ public class FilmService {
         }
 
         validateReleaseDate(film);
+        validateMpaAndGenres(film);
         return filmStorage.update(film);
     }
 
