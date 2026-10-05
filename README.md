@@ -26,7 +26,9 @@
 
 ## Примеры запросов
 
+
 ### 1. Получить всех пользователей
+
 ```sql
 SELECT id, email, login, name, birthday
 FROM users
@@ -34,13 +36,16 @@ ORDER BY id;
 ```
 
 ### 2. Получить все фильмы с рейтингом
+
 ```sql
 SELECT f.id, f.name, m.name AS mpa
 FROM films f
 JOIN mpa_ratings m ON f.mpa_rating_id = m.id;
 ```
 
+
 ### 3. Топ-10 фильмов по лайкам
+
 ```sql
 SELECT f.id, f.name, COUNT(l.user_id) AS likes_count
 FROM films f
@@ -50,7 +55,9 @@ ORDER BY likes_count DESC
 LIMIT 10;
 ```
 
+
 ### 4. Жанры конкретного фильма
+
 ```sql
 SELECT g.name
 FROM genres g
@@ -58,7 +65,9 @@ JOIN film_genres fg ON g.id = fg.genre_id
 WHERE fg.film_id = 1;
 ```
 
+
 ### 5. Друзья пользователя (только подтверждённые)
+
 ```sql
 SELECT u.*
 FROM users u
@@ -67,6 +76,7 @@ WHERE fr.user_id = 1 AND fr.status = 'CONFIRMED';
 ```
 
 ### 6. Общие друзья двух пользователей
+
 ```sql
 SELECT u.*
 FROM users u
