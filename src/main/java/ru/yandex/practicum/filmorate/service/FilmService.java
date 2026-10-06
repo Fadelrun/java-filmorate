@@ -1,14 +1,19 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -16,11 +21,16 @@ import java.util.stream.Collectors;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final MpaStorage mpaStorage;
+    private final GenreStorage genreStorage;
     private static final int DEFAULT_POPULAR_COUNT = 10;
 
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
+    public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
+                       @Qualifier("userDbStorage") UserStorage userStorage, MpaStorage mpaStorage, GenreStorage genreStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.mpaStorage = mpaStorage;
+        this.genreStorage = genreStorage;
     }
 
     public List<Film> getAllFilms() {
@@ -36,6 +46,7 @@ public class FilmService {
     public Film createFilm(Film film) {
         log.info("Создание фильма: {}", film.getName());
         validateReleaseDate(film);
+        validateMpaAndGenres(film);
         return filmStorage.save(film);
     }
 
@@ -48,6 +59,7 @@ public class FilmService {
         }
 
         validateReleaseDate(film);
+        validateMpaAndGenres(film);
         return filmStorage.update(film);
     }
 
@@ -103,6 +115,24 @@ public class FilmService {
             throw new ValidationException(
                     "Дата релиза не может быть ранее " + Film.MIN_RELEASE_DATE
             );
+        }
+    }
+
+    private void validateMpaAndGenres(Film film) {
+        if (film.getMpa() != null && !mpaStorage.existsById(film.getMpa().getId())) {
+            throw new NotFoundException("MPA с ID " + film.getMpa().getId() + " не найден");
+        }
+
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            Set<Integer> existingIds = genreStorage.findAll().stream()
+                    .map(Genre::getId)
+                    .collect(Collectors.toSet());
+
+            for (Genre genre : film.getGenres()) {
+                if (!existingIds.contains(genre.getId())) {
+                    throw new NotFoundException("Жанр с ID " + genre.getId() + " не найден");
+                }
+            }
         }
     }
 }
