@@ -15,9 +15,8 @@ import ru.yandex.practicum.filmorate.model.MpaRating;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository
 @Primary
@@ -50,7 +49,47 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT * FROM films ORDER BY id";
         List<Film> films = jdbcTemplate.query(sql, FILM_ROW_MAPPER);
 
-        films.forEach(this::enrich);
+        if (films.isEmpty()) return films;
+
+        String mpaSql = """
+            SELECT f.id AS film_id, m.id AS mpa_id, m.name AS mpa_name
+            FROM films f
+            JOIN mpa_ratings m ON f.mpa_rating_id = m.id
+            """;
+        Map<Integer, MpaRating> mpaMap = new HashMap<>();
+        jdbcTemplate.query(mpaSql, rs -> {
+            mpaMap.put(
+                    rs.getInt("film_id"),
+                    new MpaRating(rs.getInt("mpa_id"), rs.getString("mpa_name"))
+            );
+        });
+
+        String genresSql = """
+            SELECT fg.film_id, g.id AS genre_id, g.name AS genre_name
+            FROM film_genres fg
+            JOIN genres g ON fg.genre_id = g.id
+            ORDER BY fg.film_id, g.id
+            """;
+        Map<Integer, Set<Genre>> genresMap = new HashMap<>();
+        jdbcTemplate.query(genresSql, rs -> {
+            genresMap
+                    .computeIfAbsent(rs.getInt("film_id"), k -> new HashSet<>())
+                    .add(new Genre(rs.getInt("genre_id"), rs.getString("genre_name")));
+        });
+
+        String likesSql = "SELECT film_id, user_id FROM likes";
+        Map<Integer, Set<Integer>> likesMap = new HashMap<>();
+        jdbcTemplate.query(likesSql, rs -> {
+            likesMap
+                    .computeIfAbsent(rs.getInt("film_id"), k -> new HashSet<>())
+                    .add(rs.getInt("user_id"));
+        });
+
+        for (Film film : films) {
+            film.setMpa(mpaMap.get(film.getId()));
+            film.setGenres(genresMap.getOrDefault(film.getId(), new HashSet<>()));
+            film.setLikes(likesMap.getOrDefault(film.getId(), new HashSet<>()));
+        }
 
         return films;
     }
@@ -159,17 +198,24 @@ public class FilmDbStorage implements FilmStorage {
         if (film.getGenres() == null || film.getGenres().isEmpty()) return;
 
         String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-        for (Genre genre : film.getGenres()) {
-            jdbcTemplate.update(sql, film.getId(), genre.getId());
-        }
+
+        List<Object[]> batchArgs = film.getGenres().stream()
+                .map(genre -> new Object[]{film.getId(), genre.getId()})
+                .collect(Collectors.toList());
+
+        jdbcTemplate.batchUpdate(sql, batchArgs);
     }
 
     private void saveLikes(int filmId, Set<Integer> likes) {
         if (likes == null || likes.isEmpty()) return;
+
         String sql = "INSERT INTO likes (film_id, user_id) VALUES (?, ?)";
-        for (Integer userId : likes) {
-            jdbcTemplate.update(sql, filmId, userId);
-        }
+
+        List<Object[]> batchArgs = likes.stream()
+                .map(userId -> new Object[]{filmId, userId})
+                .collect(Collectors.toList());
+
+        jdbcTemplate.batchUpdate(sql, batchArgs);
     }
 
     private void clearLikes(int filmId) {

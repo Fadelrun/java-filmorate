@@ -13,6 +13,7 @@ import ru.yandex.practicum.filmorate.storage.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -118,14 +119,17 @@ public class FilmService {
     }
 
     private void validateMpaAndGenres(Film film) {
-
         if (film.getMpa() != null && !mpaStorage.existsById(film.getMpa().getId())) {
             throw new NotFoundException("MPA с ID " + film.getMpa().getId() + " не найден");
         }
 
-        if (film.getGenres() != null) {
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            Set<Integer> existingIds = genreStorage.findAll().stream()
+                    .map(Genre::getId)
+                    .collect(Collectors.toSet());
+
             for (Genre genre : film.getGenres()) {
-                if (!genreStorage.existsById(genre.getId())) {
+                if (!existingIds.contains(genre.getId())) {
                     throw new NotFoundException("Жанр с ID " + genre.getId() + " не найден");
                 }
             }

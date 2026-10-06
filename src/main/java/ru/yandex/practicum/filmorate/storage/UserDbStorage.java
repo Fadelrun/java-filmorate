@@ -13,9 +13,8 @@ import ru.yandex.practicum.filmorate.model.User;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository
 @Primary
@@ -40,7 +39,21 @@ public class UserDbStorage implements UserStorage {
     public List<User> findAll() {
         String sql = "SELECT * FROM users ORDER BY id";
         List<User> users = jdbcTemplate.query(sql, USER_ROW_MAPPER);
-        users.forEach(this::enrich);
+
+        if (users.isEmpty()) return users;
+
+        String friendsSql = "SELECT user_id, friend_id FROM friendships";
+        Map<Integer, Set<Integer>> friendsMap = new HashMap<>();
+        jdbcTemplate.query(friendsSql, rs -> {
+            friendsMap
+                    .computeIfAbsent(rs.getInt("user_id"), k -> new HashSet<>())
+                    .add(rs.getInt("friend_id"));
+        });
+
+        for (User user : users) {
+            user.setFriends(friendsMap.getOrDefault(user.getId(), new HashSet<>()));
+        }
+
         return users;
     }
 
@@ -117,10 +130,14 @@ public class UserDbStorage implements UserStorage {
 
     private void saveFriends(int userId, Set<Integer> friends) {
         if (friends == null || friends.isEmpty()) return;
+
         String sql = "INSERT INTO friendships (user_id, friend_id, status) VALUES (?, ?, 'CONFIRMED')";
-        for (Integer friendId : friends) {
-            jdbcTemplate.update(sql, userId, friendId);
-        }
+
+        List<Object[]> batchArgs = friends.stream()
+                .map(friendId -> new Object[]{userId, friendId})
+                .collect(Collectors.toList());
+
+        jdbcTemplate.batchUpdate(sql, batchArgs);
     }
 
     private void clearFriends(int userId) {
